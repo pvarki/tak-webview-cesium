@@ -1,0 +1,36 @@
+name: No AI control files
+
+# AGENTS.md and GEMINI.md are local AI control files and must never be
+# tracked. .gitignore covers normal `git add`, but this check also catches
+# files force-added with `git add -f`.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Ensure AI control files are not tracked
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Fail if AGENTS.md or GEMINI.md is tracked
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files | grep -E '(^|/)(AGENTS|GEMINI)\.md$' || true)"
+          if [ -n "$tracked" ]; then
+            echo "::error::AI control files must not be tracked in this repository."
+            printf 'Tracked file(s):\n%s\n' "$tracked"
+            echo "Remove them from the index with: git rm --cached <file>"
+            exit 1
+          fi
+          echo "No tracked AI control files."
